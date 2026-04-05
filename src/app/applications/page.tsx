@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 import { signOut } from "@/app/login/actions";
 import { getCurrentProfile } from "@/lib/auth";
@@ -14,7 +14,7 @@ import { createApplication, saveFeedback, updateApplicationStatus } from "./acti
 
 function formatDate(value: string | null) {
   if (!value) {
-    return "Not set";
+    return "未设置";
   }
 
   return new Intl.DateTimeFormat("zh-CN", {
@@ -27,6 +27,14 @@ function formatDate(value: string | null) {
 }
 
 const statuses = ["draft", "applied", "responded", "interviewing", "rejected", "offer"] as const;
+const statusLabels: Record<string, string> = {
+  draft: "草稿",
+  applied: "已投递",
+  responded: "已回复",
+  interviewing: "面试中",
+  rejected: "已拒绝",
+  offer: "已录用",
+};
 
 export default async function ApplicationsPage({
   searchParams,
@@ -97,26 +105,26 @@ export default async function ApplicationsPage({
   };
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#f7f3ea_0%,_#f1ede3_48%,_#ebe4d7_100%)] px-6 py-10 sm:px-10 lg:px-16">
+    <main className="min-h-screen bg-gradient-to-b from-background to-white px-6 py-10 sm:px-10 lg:px-16">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <header className="flex flex-col gap-5 rounded-[32px] border border-black/10 bg-white/80 p-8 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:flex-row sm:items-end sm:justify-between">
+        <header className="page-header">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.24em] text-amber-700">Applications workspace</p>
-            <h1 className="text-3xl font-semibold text-slate-950">Track applications and real outcomes</h1>
+            <p className="text-xs uppercase tracking-[0.24em] text-accent">投递记录</p>
+            <h1 className="text-3xl font-semibold text-slate-950">记录投递过程与真实结果</h1>
             <p className="text-sm leading-7 text-slate-600">
-              Signed in as <span className="font-medium text-slate-900">{profile.email}</span>. Turn match analyses into tracked applications and record the feedback loop.
+              当前账号：<span className="font-medium text-slate-900">{profile.email}</span>。把匹配分析转成真实投递记录，并持续回填反馈。
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/dashboard"
-              className="rounded-full border border-slate-900/15 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              href="/"
+              className="btn-secondary"
             >
-              Back to dashboard
+              返回首页
             </Link>
             <form action={signOut}>
-              <button type="submit" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-                Sign out
+              <button type="submit" className="btn-secondary">
+                退出登录
               </button>
             </form>
           </div>
@@ -125,53 +133,53 @@ export default async function ApplicationsPage({
         <div className="min-h-6 text-sm text-slate-600">{params.message ?? ""}</div>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-[24px] border border-black/10 bg-white/70 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)]">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Applications</p>
+          <article className="card-secondary">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">投递总数</p>
             <p className="mt-3 text-3xl font-semibold text-slate-950">{summaryMetrics.total}</p>
           </article>
-          <article className="rounded-[24px] border border-black/10 bg-white/70 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)]">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Used AI suggestions</p>
+          <article className="card-secondary">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">使用 AI 建议</p>
             <p className="mt-3 text-3xl font-semibold text-slate-950">{summaryMetrics.usedAi}</p>
           </article>
-          <article className="rounded-[24px] border border-black/10 bg-white/70 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)]">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Interviewing</p>
+          <article className="card-secondary">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">面试中</p>
             <p className="mt-3 text-3xl font-semibold text-slate-950">{summaryMetrics.interviewing}</p>
           </article>
-          <article className="rounded-[24px] border border-black/10 bg-white/70 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)]">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Offers</p>
+          <article className="card-secondary">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Offer</p>
             <p className="mt-3 text-3xl font-semibold text-slate-950">{summaryMetrics.offers}</p>
           </article>
         </section>
 
-        <section className="rounded-[28px] border border-black/10 bg-white/80 p-8 shadow-[0_12px_50px_rgba(15,23,42,0.06)]">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Create record</p>
-          <div className="mt-3 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        <section className="content-section">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">新建记录</p>
+          <div className="mt-3 flex flex-col gap-8">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-950">Create an application record</h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600">
-                Link an analysis to a real application so you can later compare generated suggestions against actual responses.
+              <h2 className="text-2xl font-semibold text-slate-950">创建投递记录</h2>
+              <p className="mt-2 text-lg leading-8 text-slate-700">
+                将分析结果与真实投递关联起来，方便后续比较 AI 建议与实际结果。
               </p>
             </div>
-            <form action={createApplication} className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <form action={createApplication} className="space-y-6 rounded-[24px] border border-slate-200 bg-slate-50 p-6">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-700">Analysis</span>
+                <span className="text-sm font-medium text-slate-700">关联分析</span>
                 <select
                   name="analysisId"
                   defaultValue={params.analysisId ?? ""}
-                  className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                  className="select-primary"
                 >
-                  <option value="">No linked analysis</option>
+                  <option value="">不关联分析</option>
                   {analysisList.map((analysis) => {
                     const job = jobMap.get(analysis.jd_id);
                     const resume = resumeMap.get(analysis.resume_id);
 
                     return (
                       <option key={analysis.id} value={analysis.id}>
-                        {(job?.job_title || "Untitled role") +
+                        {(job?.job_title || "未命名岗位") +
                           " / " +
-                          (job?.company_name || "Unknown company") +
+                          (job?.company_name || "未知公司") +
                           " / " +
-                          (resume?.original_file_name || "Unknown resume")}
+                          (resume?.original_file_name || "未知简历")}
                       </option>
                     );
                   })}
@@ -179,62 +187,62 @@ export default async function ApplicationsPage({
               </label>
 
               {selectedAnalysis ? (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
-                  This record will be linked to analysis <span className="font-medium">{selectedAnalysis.id.slice(0, 8)}</span>.
+                <div className="rounded-2xl border border-accent/30 bg-accent/10 p-4 text-sm leading-7 text-accent-950">
+                  该记录将关联分析 <span className="font-medium">{selectedAnalysis.id.slice(0, 8)}</span>.
                   {selectedJob
-                    ? ` Prefilled company and role are based on ${selectedJob.company_name || "the selected company"} / ${selectedJob.job_title || "the selected role"}.`
+                    ? ` 公司和岗位已根据所选分析自动预填：${selectedJob.company_name || "the selected company"} / ${selectedJob.job_title || "the selected role"}.`
                     : ""}
                 </div>
               ) : null}
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Company</span>
+                  <span className="text-sm font-medium text-slate-700">公司</span>
                   <input
                     name="companyName"
                     required
                     defaultValue={selectedJob?.company_name ?? ""}
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                    className="input-primary"
                   />
                 </label>
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Job title</span>
+                  <span className="text-sm font-medium text-slate-700">岗位名称</span>
                   <input
                     name="jobTitle"
                     required
                     defaultValue={selectedJob?.job_title ?? ""}
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                    className="input-primary"
                   />
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Channel</span>
+                  <span className="text-sm font-medium text-slate-700">投递渠道</span>
                   <input
                     name="channel"
                     placeholder="Boss / LinkedIn / Email"
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                    className="input-primary"
                   />
                 </label>
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Applied at</span>
+                  <span className="text-sm font-medium text-slate-700">投递时间</span>
                   <input
                     name="appliedAt"
                     type="datetime-local"
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                    className="input-primary"
                   />
                 </label>
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Status</span>
+                  <span className="text-sm font-medium text-slate-700">状态</span>
                   <select
                     name="status"
                     defaultValue={selectedAnalysis ? "applied" : "draft"}
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                    className="select-primary"
                   >
                     {statuses.map((status) => (
                       <option key={status} value={status}>
-                        {status}
+                        {statusLabels[status]}
                       </option>
                     ))}
                   </select>
@@ -248,29 +256,29 @@ export default async function ApplicationsPage({
                   defaultChecked={Boolean(selectedAnalysis)}
                   className="h-4 w-4 rounded border-slate-300"
                 />
-                I used the AI-generated resume or message suggestions
+                我实际采用了 AI 生成的简历或沟通建议
               </label>
 
-              <button type="submit" className="w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800">
-                Create application record
+              <button type="submit" className="btn-primary w-full">
+                创建投递记录
               </button>
             </form>
           </div>
         </section>
 
-        <section className="rounded-[28px] bg-slate-950 p-8 text-white shadow-[0_12px_50px_rgba(20,33,61,0.22)]">
+        <section className="card-dark">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Application history</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Tracked outcomes</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">投递历史</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">结果追踪</h2>
             </div>
-            <p className="text-sm text-slate-400">Update status and feed real outcomes back into the product.</p>
+            <p className="text-sm text-slate-400">更新状态并将真实结果回填到产品中。</p>
           </div>
 
           <div className="mt-6 space-y-5">
             {applicationList.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm leading-7 text-slate-300">
-                No application records yet. Create one above after generating an analysis.
+                还没有投递记录。可先从分析页进入，或在上方手动创建。
               </div>
             ) : (
               applicationList.map((application) => {
@@ -285,11 +293,11 @@ export default async function ApplicationsPage({
                       <div>
                         <h3 className="text-lg font-semibold text-white">{application.job_title}</h3>
                         <p className="mt-1 text-sm text-slate-300">
-                          {application.company_name} / {application.channel || "Unknown channel"} / Applied {formatDate(application.applied_at)}
+                          {application.company_name} / {application.channel || "未知渠道"} / 投递于 {formatDate(application.applied_at)}
                         </p>
                       </div>
-                      <div className="rounded-full bg-amber-400/20 px-4 py-2 text-sm font-semibold text-amber-200">
-                        Status: {application.status}
+                      <div className="rounded-full bg-accent/20 px-4 py-2 text-sm font-semibold text-accent-light">
+                        状态：{application.status}
                       </div>
                     </div>
 
@@ -297,37 +305,37 @@ export default async function ApplicationsPage({
                       <div className="space-y-4">
                         <div className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm leading-7 text-slate-300">
                           <p>
-                            <span className="text-slate-400">Used AI suggestions:</span> {application.used_ai_suggestion ? "Yes" : "No"}
+                            <span className="text-slate-400">使用 AI 建议:</span> {application.used_ai_suggestion ? "是" : "否"}
                           </p>
                           <p>
-                            <span className="text-slate-400">Linked analysis:</span> {linkedAnalysis ? `Score ${linkedAnalysis.match_score ?? "-"}` : "Not linked"}
+                            <span className="text-slate-400">关联分析：</span> {linkedAnalysis ? `匹配分 ${linkedAnalysis.match_score ?? "-"}` : "未关联"}
                           </p>
                           <p>
-                            <span className="text-slate-400">Linked resume:</span> {linkedResume?.original_file_name || "Not linked"}
+                            <span className="text-slate-400">关联简历：</span> {linkedResume?.original_file_name || "未关联"}
                           </p>
                           <p>
-                            <span className="text-slate-400">Linked JD:</span> {linkedJob?.job_title || "Not linked"}
+                            <span className="text-slate-400">关联 JD：</span> {linkedJob?.job_title || "未关联"}
                           </p>
                         </div>
 
                         <form action={updateApplicationStatus} className="rounded-2xl border border-white/10 bg-black/10 p-4">
                           <input type="hidden" name="applicationId" value={application.id} />
                           <label className="block space-y-2">
-                            <span className="text-sm font-medium text-slate-200">Update status</span>
+                            <span className="text-sm font-medium text-slate-200">更新状态</span>
                             <div className="flex gap-3">
                               <select
                                 name="status"
                                 defaultValue={application.status}
-                                className="block flex-1 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white"
+                                className="block flex-1 rounded-2xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-slate-100"
                               >
                                 {statuses.map((status) => (
                                   <option key={status} value={status}>
-                                    {status}
+                                    {statusLabels[status]}
                                   </option>
                                 ))}
                               </select>
-                              <button type="submit" className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-slate-200">
-                                Save
+                              <button type="submit" className="btn-secondary">
+                                保存
                               </button>
                             </div>
                           </label>
@@ -336,34 +344,34 @@ export default async function ApplicationsPage({
 
                       <form action={saveFeedback} className="rounded-2xl border border-white/10 bg-black/10 p-4">
                         <input type="hidden" name="applicationId" value={application.id} />
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Feedback loop</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">反馈回填</p>
                         <div className="mt-4 grid gap-4 md:grid-cols-2">
                           <label className="block space-y-2">
-                            <span className="text-sm font-medium text-slate-200">Response result</span>
+                            <span className="text-sm font-medium text-slate-200">回复结果</span>
                             <input
                               name="responseResult"
                               defaultValue={linkedFeedback?.response_result ?? ""}
-                              placeholder="No response / Replied / Rejected"
-                              className="block w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white"
+                              placeholder="未回复 / 已回复 / 已拒绝"
+                              className="block w-full rounded-2xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-slate-100"
                             />
                           </label>
                           <label className="block space-y-2">
-                            <span className="text-sm font-medium text-slate-200">Interview stage</span>
+                            <span className="text-sm font-medium text-slate-200">面试阶段</span>
                             <input
                               name="interviewStage"
                               defaultValue={linkedFeedback?.interview_stage ?? ""}
-                              placeholder="HR / First round / Final"
-                              className="block w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white"
+                              placeholder="HR / 一面 / 终面"
+                              className="block w-full rounded-2xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-slate-100"
                             />
                           </label>
                           <label className="block space-y-2">
-                            <span className="text-sm font-medium text-slate-200">User rating</span>
+                            <span className="text-sm font-medium text-slate-200">主观评分</span>
                             <select
                               name="userRating"
                               defaultValue={linkedFeedback?.user_rating?.toString() ?? ""}
-                              className="block w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white"
+                              className="block w-full rounded-2xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-slate-100"
                             >
-                              <option value="">No rating</option>
+                              <option value="">未评分</option>
                               <option value="1">1</option>
                               <option value="2">2</option>
                               <option value="3">3</option>
@@ -373,17 +381,17 @@ export default async function ApplicationsPage({
                           </label>
                         </div>
                         <label className="mt-4 block space-y-2">
-                          <span className="text-sm font-medium text-slate-200">Comment</span>
+                          <span className="text-sm font-medium text-slate-200">备注</span>
                           <textarea
                             name="userComment"
                             rows={4}
                             defaultValue={linkedFeedback?.user_comment ?? ""}
-                            placeholder="What actually happened after the application?"
-                            className="block w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm leading-7 text-white"
+                            placeholder="记录这次投递之后实际发生了什么"
+                            className="block w-full rounded-2xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm leading-7 text-slate-100"
                           />
                         </label>
-                        <button type="submit" className="mt-4 rounded-full bg-white px-5 py-3 text-sm font-medium text-slate-950 transition hover:bg-slate-200">
-                          Save feedback
+                        <button type="submit" className="btn-secondary mt-4">
+                          保存 feedback
                         </button>
                       </form>
                     </div>
@@ -397,3 +405,6 @@ export default async function ApplicationsPage({
     </main>
   );
 }
+
+
+

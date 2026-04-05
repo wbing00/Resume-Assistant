@@ -246,3 +246,57 @@ export async function setDefaultResume(formData: FormData) {
 
   redirect("/resume?message=Default+resume+updated");
 }
+
+export async function deleteResume(formData: FormData) {
+  const { supabase, user } = await requireAuthenticatedUser();
+  const resumeId = formData.get("resumeId");
+
+  if (typeof resumeId !== "string" || !resumeId) {
+    throw new Error("Missing resume id.");
+  }
+
+  // 首先检查该简历是否被任何分析记录引用
+  const { data: analyses, error: analysesError } = await supabase
+    .from("analyses")
+    .select("id")
+    .eq("resume_id", resumeId)
+    .eq("user_id", user.id);
+
+  if (analysesError) {
+    throw new Error(analysesError.message);
+  }
+
+  // 如果有分析记录引用此简历，先删除这些分析记录
+  if (analyses && analyses.length > 0) {
+    const { error: deleteAnalysesError } = await supabase
+      .from("analyses")
+      .delete()
+      .eq("resume_id", resumeId)
+      .eq("user_id", user.id);
+
+    if (deleteAnalysesError) {
+      throw new Error(deleteAnalysesError.message);
+    }
+  }
+
+  // 删除简历记录
+  const { error: deleteError } = await supabase
+    .from("resumes")
+    .delete()
+    .eq("id", resumeId)
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  await logProductEvent(supabase, user.id, "resume_deleted", {
+    resume_id: resumeId,
+  });
+
+  revalidatePath("/resume");
+  revalidatePath("/analysis");
+  revalidatePath("/apply");
+
+  redirect("/resume?message=Resume+deleted+successfully");
+}

@@ -229,3 +229,61 @@ export async function saveFeedback(formData: FormData) {
 
   redirect("/applications?message=Feedback+saved");
 }
+
+export async function deleteApplication(formData: FormData) {
+  const { supabase, user } = await requireAuthenticatedUser();
+  const applicationId = formData.get("applicationId");
+
+  if (typeof applicationId !== "string" || !applicationId) {
+    throw new Error("Missing application id.");
+  }
+
+  // 首先检查该投递是否有关联的反馈记录
+  const { data: feedback, error: feedbackError } = await supabase
+    .from("feedbacks")
+    .select("id")
+    .eq("application_id", applicationId)
+    .eq("user_id", user.id);
+
+  if (feedbackError) {
+    throw new Error(feedbackError.message);
+  }
+
+  // 如果有反馈记录，先删除反馈
+  if (feedback && feedback.length > 0) {
+    const { error: deleteFeedbackError } = await supabase
+      .from("feedbacks")
+      .delete()
+      .eq("application_id", applicationId)
+      .eq("user_id", user.id);
+
+    if (deleteFeedbackError) {
+      throw new Error(deleteFeedbackError.message);
+    }
+  }
+
+  // 删除投递记录
+  const { error: deleteError } = await supabase
+    .from("applications")
+    .delete()
+    .eq("id", applicationId)
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  await logEvent(
+    user.id,
+    "application_deleted",
+    {
+      application_id: applicationId,
+    },
+    supabase,
+  );
+
+  revalidatePath("/applications");
+  revalidatePath("/dashboard");
+
+  redirect("/applications?message=Application+deleted+successfully");
+}

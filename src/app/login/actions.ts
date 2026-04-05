@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { redirect } from "next/navigation";
 
@@ -14,11 +14,11 @@ function getCredentials(formData: FormData) {
   const password = formData.get("password");
 
   if (typeof email !== "string" || !email.trim()) {
-    redirect(buildLoginRedirect("Please enter your email"));
+    redirect(buildLoginRedirect("请输入邮箱"));
   }
 
   if (typeof password !== "string" || password.length < 8) {
-    redirect(buildLoginRedirect("Password must be at least 8 characters"));
+    redirect(buildLoginRedirect("密码至少需要 8 位"));
   }
 
   return {
@@ -56,11 +56,12 @@ export async function signUpWithPassword(formData: FormData) {
     redirect(buildLoginRedirect(error.message));
   }
 
-  redirect(buildLoginRedirect("Account created. Please sign in."));
+  redirect(buildLoginRedirect("账号创建成功，请登录"));
 }
 
 export async function signOut() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect(buildLoginRedirect("Signed out"));
+  redirect(buildLoginRedirect("已退出登录"));
 }
+

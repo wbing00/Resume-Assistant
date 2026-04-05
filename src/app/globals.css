@@ -1,14 +1,33 @@
 @import "tailwindcss";
 
 :root {
+  /* 原有变量 - 保持兼容性 */
   --background: #f3ede2;
   --foreground: #0f172a;
   --muted: #5b6473;
   --card: rgba(255, 255, 255, 0.72);
   --border: rgba(15, 23, 42, 0.1);
+  
+  /* 新色彩系统 */
+  --primary: #a3c1f0;      /* 品牌蓝色 - 更浅更友好 */
+  --primary-light: #63a2eb;
+  --primary-dark: #2e3f89;
+  --secondary: #065f46;    /* 品牌绿色 */
+  --secondary-light: #10b981;
+  --accent: #d97706;       /* 强调色琥珀色 */
+  --accent-light: #fbbf24;
+  --surface: #ffffff;      /* 卡片表面 */
+  --surface-dark: #06163b; /* 深色表面 */
+  --text-primary: #1e293b; /* 主要文字 */
+  --text-secondary: #64748b; /* 次要文字 */
+  --border-light: #e2e8f0; /* 浅色边框 */
+  --success: #10b981;      /* 成功色 */
+  --warning: #f59e0b;      /* 警告色 */
+  --error: #ef4444;        /* 错误色 */
 }
 
 @theme inline {
+  /* 原有主题变量 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -16,6 +35,34 @@
   --color-border: var(--border);
   --font-sans: var(--font-manrope);
   --font-mono: var(--font-plex-mono);
+  
+  /* 新主题变量 */
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-secondary-light: var(--secondary-light);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-surface: var(--surface);
+  --color-surface-dark: var(--surface-dark);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border-light: var(--border-light);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  
+  /* 圆角系统 */
+  --radius-lg: 1.5rem;    /* 24px - 大卡片 */
+  --radius-md: 1rem;      /* 16px - 中等卡片 */
+  --radius-sm: 0.75rem;   /* 12px - 小元素 */
+  --radius-full: 9999px;
+  
+  /* 阴影系统 */
+  --shadow-lg: 0 20px 80px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.02);
 }
 
 * {
@@ -44,4 +91,99 @@ button,
 textarea,
 select {
   font: inherit;
+}
+
+/* ============================================
+   自定义工具类 - UI改进系统
+   ============================================ */
+
+@layer components {
+  /* 按钮系统 */
+  .btn-primary {
+    @apply bg-primary text-white px-6 py-3 rounded-lg font-semibold
+           shadow-md hover:bg-primary-dark hover:shadow-lg
+           active:scale-[0.98] transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-primary border border-primary px-6 py-3 rounded-lg font-medium
+           shadow-sm hover:bg-primary/5 hover:shadow-md
+           active:scale-[0.98] transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+  
+  .btn-text {
+    @apply text-primary font-medium hover:text-primary-dark
+           underline-offset-4 hover:underline
+           transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded;
+  }
+  
+  .btn-danger {
+    @apply bg-error text-white px-6 py-3 rounded-lg font-semibold
+           shadow-md hover:bg-red-700 hover:shadow-lg
+           active:scale-[0.98] transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+  }
+  
+  /* 卡片系统 */
+  .card-primary {
+    @apply bg-surface rounded-3xl border border-border-light p-8
+           shadow-lg shadow-slate-200/50
+           backdrop-blur-sm;
+  }
+  
+  .card-secondary {
+    @apply bg-slate-50/80 rounded-2xl border border-border-light p-6
+           shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300;
+  }
+  
+  .card-dark {
+    @apply bg-surface-dark text-white rounded-3xl p-8
+           shadow-xl shadow-slate-900/30;
+  }
+  
+  /* 表单元素 */
+  .input-primary {
+    @apply block w-full rounded-xl border border-border-light bg-white px-4 py-3
+           text-text-primary placeholder:text-text-secondary
+           focus:border-primary focus:ring-2 focus:ring-primary/20
+           transition-all duration-200;
+  }
+  
+  .select-primary {
+    @apply block w-full rounded-xl border border-border-light bg-white px-4 py-3
+           text-text-primary
+           focus:border-primary focus:ring-2 focus:ring-primary/20
+           transition-all duration-200;
+  }
+  
+  .textarea-primary {
+    @apply block w-full rounded-xl border border-border-light bg-white px-4 py-3
+           text-text-primary placeholder:text-text-secondary
+           focus:border-primary focus:ring-2 focus:ring-primary/20
+           transition-all duration-200 resize-y;
+  }
+  
+  /* 布局组件 */
+  .page-header {
+    @apply flex flex-col gap-6 rounded-3xl border border-border-light bg-white/90 p-8
+           shadow-lg shadow-slate-200/50 backdrop-blur-sm
+           sm:flex-row sm:items-center sm:justify-between;
+  }
+  
+  .content-section {
+    @apply rounded-3xl border border-border-light bg-white/80 p-8
+           shadow-lg shadow-slate-200/30;
+  }
+  
+  /* 工具类 */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/70 border border-white/20;
+  }
 }

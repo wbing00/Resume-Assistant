@@ -126,3 +126,57 @@ export async function createJobDescriptionAnalysis(formData: FormData) {
 
   redirect("/jd?message=JD+parsed+successfully");
 }
+
+export async function deleteJobDescription(formData: FormData) {
+  const { supabase, user } = await requireAuthenticatedUser();
+  const jdId = formData.get("jdId");
+
+  if (typeof jdId !== "string" || !jdId) {
+    throw new Error("Missing JD id.");
+  }
+
+  // 首先检查该JD是否被任何分析记录引用
+  const { data: analyses, error: analysesError } = await supabase
+    .from("analyses")
+    .select("id")
+    .eq("jd_id", jdId)
+    .eq("user_id", user.id);
+
+  if (analysesError) {
+    throw new Error(analysesError.message);
+  }
+
+  // 如果有分析记录引用此JD，先删除这些分析记录
+  if (analyses && analyses.length > 0) {
+    const { error: deleteAnalysesError } = await supabase
+      .from("analyses")
+      .delete()
+      .eq("jd_id", jdId)
+      .eq("user_id", user.id);
+
+    if (deleteAnalysesError) {
+      throw new Error(deleteAnalysesError.message);
+    }
+  }
+
+  // 删除JD记录
+  const { error: deleteError } = await supabase
+    .from("job_descriptions")
+    .delete()
+    .eq("id", jdId)
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  await logProductEvent(supabase, user.id, "jd_deleted", {
+    jd_id: jdId,
+  });
+
+  revalidatePath("/jd");
+  revalidatePath("/analysis");
+  revalidatePath("/apply");
+
+  redirect("/jd?message=JD+deleted+successfully");
+}

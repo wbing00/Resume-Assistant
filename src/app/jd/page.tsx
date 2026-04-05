@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 import { signOut } from "@/app/login/actions";
 import { getCurrentProfile } from "@/lib/auth";
@@ -91,29 +91,29 @@ export default async function JobDescriptionPage({
   const jobs = (data ?? []) as JobDescriptionRecord[];
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#f7f3ea_0%,_#f1ede3_48%,_#ebe4d7_100%)] px-6 py-10 sm:px-10 lg:px-16">
+    <main className="min-h-screen bg-gradient-to-b from-background to-white px-6 py-10 sm:px-10 lg:px-16">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <header className="flex flex-col gap-5 rounded-[32px] border border-black/10 bg-white/80 p-8 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:flex-row sm:items-end sm:justify-between">
+        <header className="page-header">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.24em] text-amber-700">JD workspace</p>
-            <h1 className="text-3xl font-semibold text-slate-950">Paste and parse a target JD</h1>
+            <p className="text-xs uppercase tracking-[0.24em] text-accent">岗位 JD 解析</p>
+            <h1 className="text-3xl font-semibold text-slate-950">粘贴并解析目标岗位 JD</h1>
             <p className="text-sm leading-7 text-slate-600">
-              Signed in as <span className="font-medium text-slate-900">{profile.email}</span>. Paste a raw JD and extract the role requirements you will match against your resume.
+              当前账号：<span className="font-medium text-slate-900">{profile.email}</span>。粘贴岗位描述后，系统会提取后续匹配所需的岗位要求。
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/dashboard"
-              className="rounded-full border border-slate-900/15 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              href="/"
+              className="btn-secondary"
             >
-              Back to dashboard
+              返回首页
             </Link>
             <form action={signOut}>
               <button
                 type="submit"
-                className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="btn-secondary"
               >
-                Sign out
+                退出登录
               </button>
             </form>
           </div>
@@ -121,71 +121,71 @@ export default async function JobDescriptionPage({
 
         <div className="min-h-6 text-sm text-slate-600">{params.message ?? ""}</div>
 
-        <section className="rounded-[28px] border border-black/10 bg-white/80 p-8 shadow-[0_12px_50px_rgba(15,23,42,0.06)]">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Input</p>
-          <div className="mt-3 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        <section className="content-section">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">输入</p>
+          <div className="mt-3 flex flex-col gap-8">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-950">Create a JD parsing record</h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600">
-                Start with the raw job description. The system will extract job title, company, responsibilities, required skills, preferred skills, qualifications, and keywords.
+              <h2 className="text-2xl font-semibold text-slate-950">创建 JD 解析记录</h2>
+              <p className="mt-2 text-lg leading-8 text-slate-700">
+                从原始岗位描述开始，系统会提取岗位名称、公司、职责、必备技能、加分项、任职要求和关键词。
               </p>
             </div>
-            <form action={createJobDescriptionAnalysis} className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <form action={createJobDescriptionAnalysis} className="space-y-6 rounded-[24px] border border-slate-200 bg-slate-50 p-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Company name</span>
+                  <span className="text-sm font-medium text-slate-700">公司名称</span>
                   <input
                     name="companyName"
                     type="text"
-                    placeholder="Optional override"
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                    placeholder="可选覆盖"
+                    className="input-primary"
                   />
                 </label>
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Job title</span>
+                  <span className="text-sm font-medium text-slate-700">岗位名称</span>
                   <input
                     name="jobTitle"
                     type="text"
-                    placeholder="Optional override"
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                    placeholder="可选覆盖"
+                    className="input-primary"
                   />
                 </label>
               </div>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-700">Raw JD text</span>
+                <span className="text-sm font-medium text-slate-700">JD 原文</span>
                 <textarea
                   name="rawText"
                   required
                   rows={16}
-                  placeholder="Paste the full job description here"
-                  className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-700"
+                  placeholder="在这里粘贴完整岗位描述"
+                  className="textarea-primary"
                 />
               </label>
 
               <button
                 type="submit"
-                className="w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="btn-primary w-full"
               >
-                Parse JD
+                解析 JD
               </button>
             </form>
           </div>
         </section>
 
-        <section className="rounded-[28px] bg-slate-950 p-8 text-white shadow-[0_12px_50px_rgba(20,33,61,0.22)]">
+        <section className="card-dark">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">JD library</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Extracted role requirements</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">JD 列表</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">提取出的岗位要求</h2>
             </div>
-            <p className="text-sm text-slate-400">Review the mapped structure below each stored JD.</p>
+            <p className="text-sm text-slate-400">查看每条 JD 对应的结构化结果。</p>
           </div>
 
           <div className="mt-6 space-y-5">
             {jobs.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm leading-7 text-slate-300">
-                No JD records yet. Paste one above to build the next analysis step.
+                还没有 JD 记录。先新增一条岗位描述，再继续匹配分析。
               </div>
             ) : (
               jobs.map((job) => {
@@ -197,7 +197,7 @@ export default async function JobDescriptionPage({
                       <div>
                         <h3 className="text-lg font-semibold text-white">{job.job_title || "Untitled role"}</h3>
                         <p className="mt-1 text-sm text-slate-300">
-                          {job.company_name || "Unknown company"} · Parsed {formatDate(job.created_at)}
+                          {job.company_name || "未知公司"} 路 解析时间：{formatDate(job.created_at)}
                         </p>
                       </div>
                     </div>
@@ -205,14 +205,14 @@ export default async function JobDescriptionPage({
                     <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
                       <div className="space-y-4">
                         <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Role overview</p>
+                          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">岗位概览</p>
                           <p className="mt-3 text-sm leading-7 text-slate-300">{normalized.summary}</p>
                         </div>
 
                         <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Keywords</p>
+                          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">关键词</p>
                           {normalized.keywords.length === 0 ? (
-                            <p className="mt-3 text-sm leading-7 text-slate-400">No keywords were mapped.</p>
+                            <p className="mt-3 text-sm leading-7 text-slate-400">当前没有映射出关键词。</p>
                           ) : (
                             <div className="mt-4 flex flex-wrap gap-2">
                               {normalized.keywords.map((keyword) => (
@@ -226,15 +226,15 @@ export default async function JobDescriptionPage({
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
-                        <ListSection title="Responsibilities" items={normalized.responsibilities} emptyText="No responsibilities were mapped." />
-                        <ListSection title="Required skills" items={normalized.requiredSkills} emptyText="No required skills were mapped." />
-                        <ListSection title="Preferred skills" items={normalized.preferredSkills} emptyText="No preferred skills were mapped." />
-                        <ListSection title="Qualifications" items={normalized.qualifications} emptyText="No qualifications were mapped." />
+                        <ListSection title="岗位职责" items={normalized.responsibilities} emptyText="当前没有映射出岗位职责。" />
+                        <ListSection title="必备技能" items={normalized.requiredSkills} emptyText="当前没有映射出必备技能。" />
+                        <ListSection title="加分项" items={normalized.preferredSkills} emptyText="当前没有映射出加分项。" />
+                        <ListSection title="任职要求" items={normalized.qualifications} emptyText="当前没有映射出任职要求。" />
                       </div>
                     </div>
 
                     <details className="mt-5 rounded-2xl border border-white/10 bg-black/10 p-4">
-                      <summary className="cursor-pointer text-sm font-medium text-slate-200">Inspect raw structured JSON</summary>
+                      <summary className="cursor-pointer text-sm font-medium text-slate-200">查看原始结构化 JSON</summary>
                       <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-words text-xs leading-6 text-slate-300">
                         {JSON.stringify(normalized.raw, null, 2)}
                       </pre>
@@ -249,3 +249,4 @@ export default async function JobDescriptionPage({
     </main>
   );
 }
+

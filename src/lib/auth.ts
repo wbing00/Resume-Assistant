@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Profile, UserRole } from "@/types";
@@ -10,7 +10,7 @@ export async function requireAuthenticatedUser() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?message=Please sign in");
+    redirect("/login?message=请先登录");
   }
 
   return { supabase, user };
@@ -25,7 +25,7 @@ export async function getCurrentProfile() {
     .single();
 
   if (error || !data) {
-    redirect("/login?message=Profile not found. Please sign in again.");
+    redirect("/login?message=未找到用户资料，请重新登录");
   }
 
   return { supabase, user, profile: data as Profile };
@@ -35,8 +35,9 @@ export async function requireRole(role: UserRole) {
   const context = await getCurrentProfile();
 
   if (context.profile.role !== role) {
-    redirect("/dashboard?message=You do not have access to that page");
+    redirect("/dashboard?message=你无权访问该页面");
   }
 
   return context;
 }
+

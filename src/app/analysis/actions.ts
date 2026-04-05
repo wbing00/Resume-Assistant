@@ -177,3 +177,57 @@ export async function createAnalysis(formData: FormData) {
 
   redirect("/analysis?message=Analysis+generated+successfully");
 }
+
+export async function deleteAnalysis(formData: FormData) {
+  const { supabase, user } = await requireAuthenticatedUser();
+  const analysisId = formData.get("analysisId");
+
+  if (typeof analysisId !== "string" || !analysisId) {
+    throw new Error("Missing analysis id.");
+  }
+
+  // 首先检查该分析是否被任何投递记录引用
+  const { data: applications, error: applicationsError } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("analysis_id", analysisId)
+    .eq("user_id", user.id);
+
+  if (applicationsError) {
+    throw new Error(applicationsError.message);
+  }
+
+  // 如果有投递记录引用此分析，先将这些记录的analysis_id设为null
+  if (applications && applications.length > 0) {
+    const { error: updateApplicationsError } = await supabase
+      .from("applications")
+      .update({ analysis_id: null })
+      .eq("analysis_id", analysisId)
+      .eq("user_id", user.id);
+
+    if (updateApplicationsError) {
+      throw new Error(updateApplicationsError.message);
+    }
+  }
+
+  // 删除分析记录
+  const { error: deleteError } = await supabase
+    .from("analyses")
+    .delete()
+    .eq("id", analysisId)
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  await logProductEvent(supabase, user.id, "analysis_deleted", {
+    analysis_id: analysisId,
+  });
+
+  revalidatePath("/analysis");
+  revalidatePath("/applications");
+  revalidatePath("/apply");
+
+  redirect("/analysis?message=Analysis+deleted+successfully");
+}

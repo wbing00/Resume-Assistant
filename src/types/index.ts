@@ -8,6 +8,10 @@ export type ApplicationStatus =
   | "rejected"
   | "offer";
 
+export type FeedbackType = "bug" | "feature" | "ui" | "experience" | "other";
+
+export type FeedbackStatus = "new" | "reviewed" | "planned" | "in_progress" | "completed" | "rejected";
+
 export type JsonValue =
   | string
   | number
@@ -84,6 +88,19 @@ export interface FeedbackRecord {
   interview_stage: string | null;
   user_rating: number | null;
   user_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserFeedbackRecord {
+  id: string;
+  user_id: string;
+  feedback_type: FeedbackType;
+  title: string;
+  description: string;
+  rating: number | null;
+  status: FeedbackStatus;
+  admin_notes: string | null;
   created_at: string;
   updated_at: string;
 }

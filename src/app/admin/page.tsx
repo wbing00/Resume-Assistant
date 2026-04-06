@@ -61,11 +61,13 @@ export default async function AdminPage() {
     applicationsCount,
     feedbacksCount,
     eventsCount,
+    userFeedbacksCount,
     resumesUsersResult,
     jdUsersResult,
     analysisUsersResult,
     applicationRowsResult,
     feedbackUsersResult,
+    userFeedbacksResult,
     recentEventsResult,
   ] = await Promise.all([
     getTableCount("profiles"),
@@ -75,11 +77,13 @@ export default async function AdminPage() {
     getTableCount("applications"),
     getTableCount("feedbacks"),
     getTableCount("events"),
+    getTableCount("user_feedbacks"),
     admin.from("resumes").select("user_id"),
     admin.from("job_descriptions").select("user_id"),
     admin.from("analyses").select("user_id"),
     admin.from("applications").select("id, user_id, status, used_ai_suggestion"),
     admin.from("feedbacks").select("user_id"),
+    admin.from("user_feedbacks").select("id, user_id, feedback_type, status, rating, created_at"),
     admin
       .from("events")
       .select("id, user_id, event_name, event_payload, created_at")
@@ -92,6 +96,7 @@ export default async function AdminPage() {
   if (analysisUsersResult.error) throw new Error(analysisUsersResult.error.message);
   if (applicationRowsResult.error) throw new Error(applicationRowsResult.error.message);
   if (feedbackUsersResult.error) throw new Error(feedbackUsersResult.error.message);
+  if (userFeedbacksResult.error) throw new Error(userFeedbacksResult.error.message);
   if (recentEventsResult.error) throw new Error(recentEventsResult.error.message);
 
   const applicationRows = applicationRowsResult.data ?? [];
@@ -103,17 +108,30 @@ export default async function AdminPage() {
   const usersWithAnalysis = getUniqueCount(analysisUsersResult.data);
   const usersWithApplication = getUniqueCount(applicationRows.map((row) => ({ user_id: row.user_id })));
   const usersWithFeedback = getUniqueCount(feedbackUsersResult.data);
+  const usersWithUserFeedback = getUniqueCount(userFeedbacksResult.data);
+
+  // Calculate user feedback statistics
+  const userFeedbacks = userFeedbacksResult.data ?? [];
+  const feedbacksByStatus = userFeedbacks.reduce((acc, fb) => {
+    acc[fb.status] = (acc[fb.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const ratings = userFeedbacks
+    .map(fb => fb.rating)
+    .filter((rating): rating is number => rating !== null && rating > 0);
+  const averageRating = ratings.length > 0
+    ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+    : 0;
 
   const applicationsUsingAi = applicationRows.filter((row) => row.used_ai_suggestion).length;
-  const interviewingCount = applicationRows.filter((row) => row.status === "interviewing").length;
-  const offerCount = applicationRows.filter((row) => row.status === "offer").length;
   const respondedCount = applicationRows.filter((row) => ["responded", "interviewing", "rejected", "offer"].includes(row.status)).length;
 
   const headlineMetrics = [
     { label: "总用户数", value: totalUsers.toString(), hint: "已创建资料的账号数" },
     { label: "分析次数", value: analysesCount.count.toString(), hint: "已生成的简历-JD 分析数" },
     { label: "投递记录数", value: applicationsCount.count.toString(), hint: "已记录的投递条数" },
-    { label: "反馈填写率", value: formatPercent(feedbacksCount.count, applicationsCount.count), hint: `${feedbacksCount.count} 条反馈记录` },
+    { label: "用户反馈数", value: userFeedbacksCount.count.toString(), hint: `${userFeedbacksCount.count} 条产品反馈` },
   ];
 
   const funnelSteps = [
@@ -122,14 +140,15 @@ export default async function AdminPage() {
     { label: "提交 JD", value: usersWithJd, helper: `${jdCount.count} 条 JD 记录` },
     { label: "生成分析", value: usersWithAnalysis, helper: `${analysesCount.count} 次分析` },
     { label: "创建投递", value: usersWithApplication, helper: `${applicationsCount.count} 条投递记录` },
-    { label: "保存反馈", value: usersWithFeedback, helper: `${feedbacksCount.count} 条反馈记录` },
+    { label: "保存投递反馈", value: usersWithFeedback, helper: `${feedbacksCount.count} 条投递反馈记录` },
+    { label: "提供产品反馈", value: usersWithUserFeedback, helper: `${userFeedbacksCount.count} 条产品反馈记录` },
   ];
 
   const performanceMetrics = [
     { label: "建议采纳率", value: formatPercent(applicationsUsingAi, applicationsCount.count), hint: `${applicationsUsingAi} 条记录标记为使用了 AI 建议` },
     { label: "获得后续反馈率", value: formatPercent(respondedCount, applicationsCount.count), hint: `${respondedCount} 条记录已进入回复或后续阶段` },
-    { label: "面试中", value: interviewingCount.toString(), hint: "当前处于面试中的投递" },
-    { label: "Offer", value: offerCount.toString(), hint: "当前标记为 Offer 的投递" },
+    { label: "用户反馈平均评分", value: averageRating > 0 ? averageRating.toFixed(1) + "⭐" : "暂无", hint: `${ratings.length} 条反馈包含评分` },
+    { label: "用户反馈解决率", value: formatPercent(feedbacksByStatus["completed"] || 0, userFeedbacksCount.count), hint: `${feedbacksByStatus["completed"] || 0} 条反馈已解决` },
     { label: "事件总量", value: eventsCount.count.toString(), hint: "已记录的产品事件" },
   ];
 
@@ -251,5 +270,4 @@ export default async function AdminPage() {
     </main>
   );
 }
-
 

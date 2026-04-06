@@ -1,11 +1,16 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
+import { deleteAnalysis } from "@/app/analysis/actions";
 import { signOut } from "@/app/login/actions";
+import { DeleteButton } from "@/components/ui/delete-button";
+import { OutreachMessageBlock } from "@/components/ui/OutreachMessageBlock";
 import { FormPendingHint, SubmitButton } from "@/components/ui/submit-button";
 import { getCurrentProfile } from "@/lib/auth";
 import type { AnalysisRecord, JobDescriptionRecord, JsonValue, ResumeRecord } from "@/types";
 
 import { createApplyResult } from "./actions";
+
+export const dynamic = "force-dynamic";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -28,6 +33,9 @@ function parseSuggestions(value: JsonValue | null) {
     return {
       suggestions: value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())),
       outreachMessage: "",
+      scoreSummary: "",
+      scoreReasons: [] as string[],
+      scoreRisks: [] as string[],
     };
   }
 
@@ -40,12 +48,22 @@ function parseSuggestions(value: JsonValue | null) {
     return {
       suggestions: suggestionItems,
       outreachMessage: typeof object.outreach_message === "string" ? object.outreach_message.trim() : "",
+      scoreSummary: typeof object.score_summary === "string" ? object.score_summary.trim() : "",
+      scoreReasons: Array.isArray(object.score_reasons)
+        ? object.score_reasons.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+        : [],
+      scoreRisks: Array.isArray(object.score_risks)
+        ? object.score_risks.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+        : [],
     };
   }
 
   return {
     suggestions: [],
     outreachMessage: "",
+    scoreSummary: "",
+    scoreReasons: [] as string[],
+    scoreRisks: [] as string[],
   };
 }
 
@@ -140,7 +158,7 @@ export default async function ApplyPage({
               <p className="text-xs uppercase tracking-[0.2em] text-text-secondary">核心任务</p>
               <h2 className="mt-3 text-2xl font-semibold text-text-strong">开始一次投递准备</h2>
               <p className="mt-2 text-lg leading-8 text-text-secondary">
-                你现在只需要做两件事：粘贴目标岗位 JD，选择一份基础简历。系统会自动完成岗位解析和匹配分析，并输出可直接使用的介绍和修改建议。
+                你现在只需要做两件事：粘贴目标岗位 JD，选择一份基础简历。系统会自动完成岗位解析和匹配分析，并输出可直接使用的投递附言与匹配判断。
               </p>
               <div className="panel-note mt-5">
                 适合的场景：你已经确定好要投哪个岗位，现在只想快速得到一段更贴合 JD 的介绍和投递内容。
@@ -153,7 +171,10 @@ export default async function ApplyPage({
                 <select name="resumeId" required className="select-primary">
                   <option value="">请选择一份简历</option>
                   {resumeList.map((resume) => (
-                    <option key={resume.id} value={resume.id}>{resume.original_file_name}{resume.is_default ? "（默认）" : ""}</option>
+                    <option key={resume.id} value={resume.id}>
+                      {resume.original_file_name}
+                      {resume.is_default ? "（默认）" : ""}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -202,39 +223,70 @@ export default async function ApplyPage({
                 const resume = resumeMap.get(analysis.resume_id);
                 const strengths = asStringArray(analysis.strengths_json);
                 const gaps = asStringArray(analysis.gaps_json);
-                const bullets = asStringArray(analysis.generated_resume_bullets);
-                const { suggestions, outreachMessage } = parseSuggestions(analysis.suggestions_json);
+                const { outreachMessage, scoreSummary, scoreReasons, scoreRisks } = parseSuggestions(analysis.suggestions_json);
                 const isFocused = analysis.id === latestAnalysisId;
 
                 return (
-                  <article key={analysis.id} className={`rounded-[24px] border p-6 ${isFocused ? "border-primary/35 bg-surface shadow-[var(--shadow-sm)]" : "border-border-light bg-[rgba(255,250,243,0.72)]"}`}>
+                  <article
+                    key={analysis.id}
+                    className={`rounded-[24px] border p-6 ${isFocused ? "border-primary/35 bg-surface shadow-[var(--shadow-sm)]" : "border-border-light bg-[rgba(255,250,243,0.72)]"}`}
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-text-strong">{job?.job_title || "未命名岗位"}</h3>
-                        <p className="mt-1 text-sm text-text-secondary">公司：{job?.company_name || "未知公司"} · 简历：{resume?.original_file_name || "未知简历"} · 生成时间：{formatDate(analysis.created_at)}</p>
+                        <p className="mt-1 text-sm text-text-secondary">
+                          公司：{job?.company_name || "未知公司"} · 简历：{resume?.original_file_name || "未知简历"} · 生成时间：{formatDate(analysis.created_at)}
+                        </p>
                       </div>
                       <div className="flex flex-wrap gap-3">
                         <div className="info-chip">匹配分：{analysis.match_score ?? "-"}</div>
                         <Link href={`/applications?analysisId=${analysis.id}`} className="btn-secondary">
                           记录这次投递
                         </Link>
+                        <DeleteButton
+                          action={deleteAnalysis}
+                          id={analysis.id}
+                          idName="analysisId"
+                          confirmMessage="确定要删除这条投递内容吗？如果它已经被投递记录引用，系统会自动解除关联。"
+                          className="btn-danger"
+                        />
                       </div>
                     </div>
 
                     <div className="mt-5 space-y-4">
+                      <div className="grid gap-4 lg:grid-cols-[0.72fr_1.28fr]">
+                        <div className="result-card">
+                          <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">匹配评分</p>
+                          <div className="mt-3 flex items-end gap-3">
+                            <span className="text-4xl font-semibold text-text-strong">{analysis.match_score ?? "-"}</span>
+                            <span className="pb-1 text-sm text-text-secondary">/ 100</span>
+                          </div>
+                          <p className="mt-3 text-sm leading-7 text-text-primary">{scoreSummary || "当前没有生成评分摘要。"}</p>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <ListBlock title="评分理由" items={scoreReasons} emptyText="当前没有生成评分理由。" />
+                          <ListBlock title="分数保留项" items={scoreRisks} emptyText="当前没有生成分数保留项。" />
+                        </div>
+                      </div>
+
                       <div className="rounded-2xl border border-border-light bg-surface p-4">
                         <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">自我介绍</p>
-                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-text-primary">{analysis.generated_intro || "当前没有生成自我介绍。"}</p>
+                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-text-primary">
+                          {analysis.generated_intro || "当前没有生成自我介绍。"}
+                        </p>
                       </div>
+
                       <div className="rounded-2xl border border-border-light bg-surface p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">打招呼 / 投递附言</p>
-                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-text-primary">{outreachMessage || "当前没有生成投递附言。"}</p>
+                        <OutreachMessageBlock
+                          analysisId={analysis.id}
+                          initialMessage={outreachMessage}
+                        />
                       </div>
-                      <ListBlock title="简历修改建议" items={bullets} emptyText="当前没有生成简历修改建议。" />
-                      <div className="grid gap-4 md:grid-cols-3">
+
+                      <div className="grid gap-4 md:grid-cols-2">
                         <ListBlock title="匹配优势" items={strengths} emptyText="当前没有识别出匹配优势。" />
                         <ListBlock title="能力差距" items={gaps} emptyText="当前没有识别出能力差距。" />
-                        <ListBlock title="优化建议" items={suggestions} emptyText="当前没有识别出优化建议。" />
                       </div>
                     </div>
                   </article>

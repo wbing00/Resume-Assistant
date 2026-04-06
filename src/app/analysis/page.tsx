@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 
 import { signOut } from "@/app/login/actions";
+import { OutreachMessageBlock } from "@/components/ui/OutreachMessageBlock";
 import { FormPendingHint, SubmitButton } from "@/components/ui/submit-button";
 import { getCurrentProfile } from "@/lib/auth";
 import type { AnalysisRecord, JobDescriptionRecord, JsonValue, ResumeRecord } from "@/types";
@@ -28,6 +29,9 @@ function parseSuggestions(value: JsonValue | null) {
     return {
       suggestions: value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())),
       outreachMessage: "",
+      scoreSummary: "",
+      scoreReasons: [] as string[],
+      scoreRisks: [] as string[],
     };
   }
 
@@ -40,12 +44,22 @@ function parseSuggestions(value: JsonValue | null) {
     return {
       suggestions: suggestionItems,
       outreachMessage: typeof object.outreach_message === "string" ? object.outreach_message.trim() : "",
+      scoreSummary: typeof object.score_summary === "string" ? object.score_summary.trim() : "",
+      scoreReasons: Array.isArray(object.score_reasons)
+        ? object.score_reasons.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+        : [],
+      scoreRisks: Array.isArray(object.score_risks)
+        ? object.score_risks.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+        : [],
     };
   }
 
   return {
     suggestions: [],
     outreachMessage: "",
+    scoreSummary: "",
+    scoreReasons: [] as string[],
+    scoreRisks: [] as string[],
   };
 }
 
@@ -145,7 +159,7 @@ export default async function AnalysisPage({
             <div>
               <h2 className="text-2xl font-semibold text-text-strong">创建匹配分析</h2>
               <p className="mt-2 text-lg leading-8 text-text-secondary">
-                选择一份已解析简历和一条已解析 JD。系统会生成匹配分、优势、差距、修改建议以及投递文案。
+                选择一份已解析简历和一条已解析 JD。系统会生成匹配分、评分依据、差距判断和投递文案。
               </p>
             </div>
             <form action={createAnalysis} className="space-y-6 rounded-[24px] border border-border-light bg-surface-medium p-6">
@@ -204,7 +218,7 @@ export default async function AnalysisPage({
                 const job = jobMap.get(analysis.jd_id);
                 const strengths = asStringArray(analysis.strengths_json);
                 const gaps = asStringArray(analysis.gaps_json);
-                const { suggestions, outreachMessage } = parseSuggestions(analysis.suggestions_json);
+                const { suggestions, outreachMessage, scoreSummary, scoreReasons, scoreRisks } = parseSuggestions(analysis.suggestions_json);
                 const bullets = asStringArray(analysis.generated_resume_bullets);
 
                 return (
@@ -228,6 +242,24 @@ export default async function AnalysisPage({
 
                     <div className="mt-5 flex flex-col gap-8">
                       <div className="space-y-4">
+                        <div className="grid gap-4 lg:grid-cols-[0.72fr_1.28fr]">
+                          <div className="result-card">
+                            <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">匹配评分</p>
+                            <div className="mt-3 flex items-end gap-3">
+                              <span className="text-4xl font-semibold text-text-strong">{analysis.match_score ?? "-"}</span>
+                              <span className="pb-1 text-sm text-text-secondary">/ 100</span>
+                            </div>
+                            <p className="mt-3 text-sm leading-7 text-text-primary">
+                              {scoreSummary || "当前没有生成评分摘要。"}
+                            </p>
+                          </div>
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <ListBlock title="评分理由" items={scoreReasons} emptyText="当前没有生成评分理由。" />
+                            <ListBlock title="分数保留项" items={scoreRisks} emptyText="当前没有生成分数保留项。" />
+                          </div>
+                        </div>
+
                         <div className="result-card">
                           <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">自我介绍</p>
                           <p className="mt-3 text-sm leading-7 text-text-primary">
@@ -235,10 +267,10 @@ export default async function AnalysisPage({
                           </p>
                         </div>
                         <div className="result-card">
-                          <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">打招呼 / 投递附言</p>
-                          <p className="mt-3 text-sm leading-7 text-text-primary">
-                            {outreachMessage || "当前没有生成投递附言。"}
-                          </p>
+                          <OutreachMessageBlock
+                            analysisId={analysis.id}
+                            initialMessage={outreachMessage}
+                          />
                         </div>
                         <ListBlock title="简历修改建议" items={bullets} emptyText="当前没有生成简历改写建议。" />
                       </div>

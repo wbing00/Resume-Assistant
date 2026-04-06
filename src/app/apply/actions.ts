@@ -1,10 +1,15 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireAuthenticatedUser } from "@/lib/auth";
+import {
+  buildJobApplyNotePrompt,
+  buildOutreachMessageFromReasons,
+  getJobApplyNoteSystemPrompt,
+} from "@/lib/ai/job-apply-note";
 import { env } from "@/lib/env";
 import { logProductEvent } from "@/lib/events";
 import type { JsonValue } from "@/types";
@@ -20,12 +25,13 @@ const structuredJobSchema = z.object({
   keywords: z.array(z.string()).default([]),
 });
 
-const analysisSchema = z.object({
+const applyAnalysisSchema = z.object({
   match_score: z.number().int().min(0).max(100),
+  score_summary: z.string().default(""),
+  score_reasons: z.array(z.string()).default([]),
+  score_risks: z.array(z.string()).default([]),
   strengths: z.array(z.string()).default([]),
   gaps: z.array(z.string()).default([]),
-  suggestions: z.array(z.string()).default([]),
-  resume_bullets: z.array(z.string()).default([]),
   intro: z.string().default(""),
   outreach_message: z.string().default(""),
 });
@@ -90,34 +96,17 @@ async function structureJobDescription(rawText: string) {
   return structuredJobSchema.parse(JSON.parse(normalized));
 }
 
-async function generateAnalysis(
+async function generateApplyAnalysis(
   resumeText: string,
   resumeStructured: JsonValue | null,
   jdText: string,
   jdStructured: JsonValue | null,
 ) {
   const prompt = [
-    "You are analyzing how well a candidate resume matches a target job description.",
-    "Return valid JSON only.",
-    "Do not invent candidate experience.",
-    "Use evidence from the resume and JD.",
-    "Schema:",
-    JSON.stringify({
-      match_score: 0,
-      strengths: [""],
-      gaps: [""],
-      suggestions: [""],
-      resume_bullets: [""],
-      intro: "",
-      outreach_message: "",
+    buildJobApplyNotePrompt({
+      includeResumeSuggestions: false,
+      quickApplyMode: true,
     }),
-    "Guidance:",
-    "- strengths: why the candidate is already credible for this role",
-    "- gaps: missing evidence or weaker fit areas",
-    "- suggestions: concrete edits or emphasis changes",
-    "- resume_bullets: rewritten resume bullets tailored to the JD, grounded in existing experience",
-    "- intro: a concise self-introduction for interview or self-summary use",
-    "- outreach_message: a short message the candidate can send to HR or a hiring manager when applying",
     "Candidate structured resume:",
     jsonStringifySafe(resumeStructured),
     "Candidate raw resume text:",
@@ -137,9 +126,12 @@ async function generateAnalysis(
     },
     body: JSON.stringify({
       model: env.OPENAI_MODEL,
-      temperature: 0.2,
+      temperature: 0.15,
       messages: [
-        { role: "system", content: "Analyze resume-job match and output valid JSON only." },
+        {
+          role: "system",
+          content: getJobApplyNoteSystemPrompt(),
+        },
         { role: "user", content: prompt },
       ],
     }),
@@ -160,7 +152,7 @@ async function generateAnalysis(
   }
 
   const normalized = content.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
-  return analysisSchema.parse(JSON.parse(normalized));
+  return applyAnalysisSchema.parse(JSON.parse(normalized));
 }
 
 export async function createApplyResult(formData: FormData) {
@@ -229,7 +221,13 @@ export async function createApplyResult(formData: FormData) {
     source: "apply_flow",
   });
 
-  const analysis = await generateAnalysis(parsedResumeText, resume.structured_json as JsonValue | null, rawText, structuredJob);
+  const analysis = await generateApplyAnalysis(
+    parsedResumeText,
+    resume.structured_json as JsonValue | null,
+    rawText,
+    structuredJob,
+  );
+  const outreachMessage = analysis.outreach_message?.trim() || buildOutreachMessageFromReasons(analysis.score_reasons);
 
   const { data: insertedAnalysis, error: analysisError } = await supabase
     .from("analyses")
@@ -241,11 +239,14 @@ export async function createApplyResult(formData: FormData) {
       strengths_json: analysis.strengths,
       gaps_json: analysis.gaps,
       suggestions_json: {
-        suggestions: analysis.suggestions,
-        outreach_message: analysis.outreach_message,
+        suggestions: [],
+        outreach_message: outreachMessage,
+        score_summary: analysis.score_summary,
+        score_reasons: analysis.score_reasons,
+        score_risks: analysis.score_risks,
       },
       generated_intro: analysis.intro,
-      generated_resume_bullets: analysis.resume_bullets,
+      generated_resume_bullets: [],
     })
     .select("id")
     .single();
@@ -259,6 +260,7 @@ export async function createApplyResult(formData: FormData) {
     resume_id: resume.id,
     jd_id: insertedJob.id,
     match_score: analysis.match_score,
+    score_reasons: analysis.score_reasons,
     source: "apply_flow",
   });
 

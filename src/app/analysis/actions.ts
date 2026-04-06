@@ -5,12 +5,20 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireAuthenticatedUser } from "@/lib/auth";
+import {
+  buildJobApplyNotePrompt,
+  buildOutreachMessageFromReasons,
+  getJobApplyNoteSystemPrompt,
+} from "@/lib/ai/job-apply-note";
 import { env } from "@/lib/env";
 import { logProductEvent } from "@/lib/events";
 import type { JsonValue } from "@/types";
 
 const analysisSchema = z.object({
   match_score: z.number().int().min(0).max(100),
+  score_summary: z.string().default(""),
+  score_reasons: z.array(z.string()).default([]),
+  score_risks: z.array(z.string()).default([]),
   strengths: z.array(z.string()).default([]),
   gaps: z.array(z.string()).default([]),
   suggestions: z.array(z.string()).default([]),
@@ -23,29 +31,17 @@ function jsonStringifySafe(value: JsonValue | null) {
   return JSON.stringify(value ?? {}, null, 2);
 }
 
-async function generateAnalysis(resumeText: string, resumeStructured: JsonValue | null, jdText: string, jdStructured: JsonValue | null) {
+async function generateAnalysis(
+  resumeText: string,
+  resumeStructured: JsonValue | null,
+  jdText: string,
+  jdStructured: JsonValue | null,
+) {
   const prompt = [
-    "You are analyzing how well a candidate resume matches a target job description.",
-    "Return valid JSON only.",
-    "Do not invent candidate experience.",
-    "Use evidence from the resume and JD.",
-    "Schema:",
-    JSON.stringify({
-      match_score: 0,
-      strengths: [""],
-      gaps: [""],
-      suggestions: [""],
-      resume_bullets: [""],
-      intro: "",
-      outreach_message: "",
+    buildJobApplyNotePrompt({
+      includeResumeSuggestions: true,
+      quickApplyMode: false,
     }),
-    "Guidance:",
-    "- strengths: why the candidate is already credible for this role",
-    "- gaps: missing evidence or weaker fit areas",
-    "- suggestions: concrete edits or emphasis changes",
-    "- resume_bullets: rewritten resume bullets tailored to the JD, grounded in existing experience",
-    "- intro: a concise self-introduction for interview or self-summary use",
-    "- outreach_message: a short message the candidate can send to HR or a hiring manager when applying",
     "Candidate structured resume:",
     jsonStringifySafe(resumeStructured),
     "Candidate raw resume text:",
@@ -69,12 +65,9 @@ async function generateAnalysis(resumeText: string, resumeStructured: JsonValue 
       messages: [
         {
           role: "system",
-          content: "Analyze resume-job match and output valid JSON only.",
+          content: getJobApplyNoteSystemPrompt(),
         },
-        {
-          role: "user",
-          content: prompt,
-        },
+        { role: "user", content: prompt },
       ],
     }),
   });
@@ -95,7 +88,6 @@ async function generateAnalysis(resumeText: string, resumeStructured: JsonValue 
   }
 
   const normalized = content.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
-
   return analysisSchema.parse(JSON.parse(normalized));
 }
 
@@ -140,7 +132,13 @@ export async function createAnalysis(formData: FormData) {
     throw new Error("The selected resume does not contain parsed text.");
   }
 
-  const analysis = await generateAnalysis(parsedResumeText, resume.structured_json as JsonValue | null, jd.raw_text, jd.structured_json as JsonValue | null);
+  const analysis = await generateAnalysis(
+    parsedResumeText,
+    resume.structured_json as JsonValue | null,
+    jd.raw_text,
+    jd.structured_json as JsonValue | null,
+  );
+  const outreachMessage = analysis.outreach_message?.trim() || buildOutreachMessageFromReasons(analysis.score_reasons);
 
   const { data: insertedAnalysis, error: insertError } = await supabase
     .from("analyses")
@@ -153,7 +151,10 @@ export async function createAnalysis(formData: FormData) {
       gaps_json: analysis.gaps,
       suggestions_json: {
         suggestions: analysis.suggestions,
-        outreach_message: analysis.outreach_message,
+        outreach_message: outreachMessage,
+        score_summary: analysis.score_summary,
+        score_reasons: analysis.score_reasons,
+        score_risks: analysis.score_risks,
       },
       generated_intro: analysis.intro,
       generated_resume_bullets: analysis.resume_bullets,
@@ -170,6 +171,7 @@ export async function createAnalysis(formData: FormData) {
     resume_id: resume.id,
     jd_id: jd.id,
     match_score: analysis.match_score,
+    score_reasons: analysis.score_reasons,
   });
 
   revalidatePath("/analysis");
@@ -186,7 +188,6 @@ export async function deleteAnalysis(formData: FormData) {
     throw new Error("Missing analysis id.");
   }
 
-  // 首先检查该分析是否被任何投递记录引用
   const { data: applications, error: applicationsError } = await supabase
     .from("applications")
     .select("id")
@@ -197,7 +198,6 @@ export async function deleteAnalysis(formData: FormData) {
     throw new Error(applicationsError.message);
   }
 
-  // 如果有投递记录引用此分析，先将这些记录的analysis_id设为null
   if (applications && applications.length > 0) {
     const { error: updateApplicationsError } = await supabase
       .from("applications")
@@ -210,7 +210,6 @@ export async function deleteAnalysis(formData: FormData) {
     }
   }
 
-  // 删除分析记录
   const { error: deleteError } = await supabase
     .from("analyses")
     .delete()
@@ -230,4 +229,53 @@ export async function deleteAnalysis(formData: FormData) {
   revalidatePath("/apply");
 
   redirect("/analysis?message=Analysis+deleted+successfully");
+}
+
+export async function updateOutreachMessage(formData: FormData) {
+  const { supabase, user } = await requireAuthenticatedUser();
+  const analysisId = formData.get("analysisId");
+  const newMessage = formData.get("outreachMessage");
+
+  if (typeof analysisId !== "string" || !analysisId) {
+    throw new Error("Missing analysis id.");
+  }
+  if (typeof newMessage !== "string") {
+    throw new Error("Missing outreach message.");
+  }
+
+  const { data: analysis, error: fetchError } = await supabase
+    .from("analyses")
+    .select("suggestions_json")
+    .eq("id", analysisId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (fetchError || !analysis) {
+    throw new Error("Analysis not found.");
+  }
+
+  const suggestions = analysis.suggestions_json as Record<string, unknown> || {};
+  const updatedSuggestions = {
+    ...suggestions,
+    outreach_message: newMessage.trim(),
+  };
+
+  const { error: updateError } = await supabase
+    .from("analyses")
+    .update({
+      suggestions_json: updatedSuggestions,
+    })
+    .eq("id", analysisId)
+    .eq("user_id", user.id);
+
+  if (updateError) {
+    throw new Error(updateError.message || "Failed to update outreach message.");
+  }
+
+  await logProductEvent(supabase, user.id, "outreach_message_updated", {
+    analysis_id: analysisId,
+  });
+
+  revalidatePath("/analysis");
+  revalidatePath("/apply");
 }

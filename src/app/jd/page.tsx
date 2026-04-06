@@ -1,10 +1,12 @@
 ﻿import Link from "next/link";
 
 import { signOut } from "@/app/login/actions";
+import { DeleteButton } from "@/components/ui/delete-button";
+import { FormPendingHint, SubmitButton } from "@/components/ui/submit-button";
 import { getCurrentProfile } from "@/lib/auth";
 import type { JobDescriptionRecord, JsonValue } from "@/types";
 
-import { createJobDescriptionAnalysis } from "./actions";
+import { createJobDescriptionAnalysis, deleteJobDescription } from "./actions";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -44,7 +46,7 @@ function normalizeJobDescription(structured: JsonValue | null) {
       asString(object.summary) ||
       asString(object.overview) ||
       asString(object.description) ||
-      "No summary generated.",
+      "当前没有生成岗位概览。",
     responsibilities: stringList(object.responsibilities ?? object.key_responsibilities),
     requiredSkills: stringList(object.required_skills ?? object.must_have_skills ?? object.skills),
     preferredSkills: stringList(object.preferred_skills ?? object.nice_to_have_skills),
@@ -56,12 +58,12 @@ function normalizeJobDescription(structured: JsonValue | null) {
 
 function ListSection({ title, items, emptyText }: { title: string; items: string[]; emptyText: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{title}</p>
+    <div className="result-card-muted">
+      <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">{title}</p>
       {items.length === 0 ? (
-        <p className="mt-3 text-sm leading-7 text-slate-400">{emptyText}</p>
+        <p className="mt-3 text-sm leading-7 text-text-secondary">{emptyText}</p>
       ) : (
-        <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-200">
+        <ul className="mt-3 space-y-2 text-sm leading-7 text-text-primary">
           {items.map((item) => (
             <li key={item}>{item}</li>
           ))}
@@ -91,14 +93,14 @@ export default async function JobDescriptionPage({
   const jobs = (data ?? []) as JobDescriptionRecord[];
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-white px-6 py-10 sm:px-10 lg:px-16">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <main className="page-shell">
+      <div className="page-wrap">
         <header className="page-header">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.24em] text-accent">岗位 JD 解析</p>
-            <h1 className="text-3xl font-semibold text-slate-950">粘贴并解析目标岗位 JD</h1>
-            <p className="text-sm leading-7 text-slate-600">
-              当前账号：<span className="font-medium text-slate-900">{profile.email}</span>。粘贴岗位描述后，系统会提取后续匹配所需的岗位要求。
+            <h1 className="text-3xl font-semibold text-text-strong">粘贴并解析目标岗位 JD</h1>
+            <p className="text-sm leading-7 text-text-secondary">
+              当前账号：<span className="font-medium text-text-primary">{profile.email}</span>。粘贴岗位描述后，系统会提取后续匹配所需的岗位要求。
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -119,21 +121,21 @@ export default async function JobDescriptionPage({
           </div>
         </header>
 
-        <div className="min-h-6 text-sm text-slate-600">{params.message ?? ""}</div>
+        <div className="min-h-6 text-sm text-text-secondary">{params.message ?? ""}</div>
 
         <section className="content-section">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">输入</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-text-secondary">输入</p>
           <div className="mt-3 flex flex-col gap-8">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-950">创建 JD 解析记录</h2>
-              <p className="mt-2 text-lg leading-8 text-slate-700">
+              <h2 className="text-2xl font-semibold text-text-strong">创建 JD 解析记录</h2>
+              <p className="mt-2 text-lg leading-8 text-text-secondary">
                 从原始岗位描述开始，系统会提取岗位名称、公司、职责、必备技能、加分项、任职要求和关键词。
               </p>
             </div>
-            <form action={createJobDescriptionAnalysis} className="space-y-6 rounded-[24px] border border-slate-200 bg-slate-50 p-6">
+            <form action={createJobDescriptionAnalysis} className="space-y-6 rounded-[24px] border border-border-light bg-surface-medium p-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">公司名称</span>
+                  <span className="text-sm font-medium text-text-primary">公司名称</span>
                   <input
                     name="companyName"
                     type="text"
@@ -142,7 +144,7 @@ export default async function JobDescriptionPage({
                   />
                 </label>
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">岗位名称</span>
+                  <span className="text-sm font-medium text-text-primary">岗位名称</span>
                   <input
                     name="jobTitle"
                     type="text"
@@ -153,7 +155,7 @@ export default async function JobDescriptionPage({
               </div>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-700">JD 原文</span>
+                <span className="text-sm font-medium text-text-primary">JD 原文</span>
                 <textarea
                   name="rawText"
                   required
@@ -163,28 +165,26 @@ export default async function JobDescriptionPage({
                 />
               </label>
 
-              <button
-                type="submit"
-                className="btn-primary w-full"
-              >
+              <SubmitButton className="btn-primary w-full" pendingText="正在解析 JD...">
                 解析 JD
-              </button>
+              </SubmitButton>
+              <FormPendingHint text="JD 解析通常需要几秒到十几秒，请勿重复点击。" />
             </form>
           </div>
         </section>
 
-        <section className="card-dark">
+        <section className="card-medium">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">JD 列表</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">提取出的岗位要求</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-text-secondary">JD 列表</p>
+              <h2 className="mt-2 text-2xl font-semibold text-text-strong">提取出的岗位要求</h2>
             </div>
-            <p className="text-sm text-slate-400">查看每条 JD 对应的结构化结果。</p>
+            <p className="text-sm text-text-secondary">查看每条 JD 对应的结构化结果。</p>
           </div>
 
           <div className="mt-6 space-y-5">
             {jobs.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm leading-7 text-slate-300">
+              <div className="rounded-2xl border border-border-light bg-surface-dark p-6 text-sm leading-7 text-text-primary">
                 还没有 JD 记录。先新增一条岗位描述，再继续匹配分析。
               </div>
             ) : (
@@ -192,31 +192,37 @@ export default async function JobDescriptionPage({
                 const normalized = normalizeJobDescription(job.structured_json);
 
                 return (
-                  <article key={job.id} className="rounded-[24px] border border-white/10 bg-white/5 p-6">
+                  <article key={job.id} className="rounded-[24px] border border-border-light bg-surface p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-white">{job.job_title || "Untitled role"}</h3>
-                        <p className="mt-1 text-sm text-slate-300">
-                          {job.company_name || "未知公司"} 路 解析时间：{formatDate(job.created_at)}
+                        <h3 className="text-lg font-semibold text-text-strong">{job.job_title || "未命名岗位"}</h3>
+                        <p className="mt-1 text-sm text-text-secondary">
+                          {job.company_name || "未知公司"} · 解析时间：{formatDate(job.created_at)}
                         </p>
                       </div>
+                      <DeleteButton
+                        action={deleteJobDescription}
+                        id={job.id}
+                        idName="jdId"
+                        confirmMessage="确定要删除这条JD记录吗？此操作将同时删除相关的分析记录。"
+                      />
                     </div>
 
                     <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
                       <div className="space-y-4">
-                        <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">岗位概览</p>
-                          <p className="mt-3 text-sm leading-7 text-slate-300">{normalized.summary}</p>
+                        <div className="result-card">
+                          <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">岗位概览</p>
+                          <p className="mt-3 text-sm leading-7 text-text-primary">{normalized.summary}</p>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">关键词</p>
+                        <div className="result-card">
+                          <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">关键词</p>
                           {normalized.keywords.length === 0 ? (
-                            <p className="mt-3 text-sm leading-7 text-slate-400">当前没有映射出关键词。</p>
+                            <p className="mt-3 text-sm leading-7 text-text-secondary">当前没有映射出关键词。</p>
                           ) : (
                             <div className="mt-4 flex flex-wrap gap-2">
                               {normalized.keywords.map((keyword) => (
-                                <span key={keyword} className="rounded-full bg-white/10 px-3 py-1 text-sm text-slate-100">
+                                <span key={keyword} className="rounded-full border border-border-light bg-surface-medium px-3 py-1 text-sm text-text-primary">
                                   {keyword}
                                 </span>
                               ))}
@@ -233,9 +239,9 @@ export default async function JobDescriptionPage({
                       </div>
                     </div>
 
-                    <details className="mt-5 rounded-2xl border border-white/10 bg-black/10 p-4">
-                      <summary className="cursor-pointer text-sm font-medium text-slate-200">查看原始结构化 JSON</summary>
-                      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-words text-xs leading-6 text-slate-300">
+                    <details className="result-card-muted mt-5">
+                      <summary className="cursor-pointer text-sm font-medium text-text-primary">查看原始结构化 JSON</summary>
+                      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-words text-xs leading-6 text-text-secondary">
                         {JSON.stringify(normalized.raw, null, 2)}
                       </pre>
                     </details>
@@ -249,4 +255,3 @@ export default async function JobDescriptionPage({
     </main>
   );
 }
-

@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { SubmitButton } from "@/components/ui/submit-button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { signInWithPassword, signUpWithPassword } from "./actions";
@@ -23,11 +24,11 @@ export default async function LoginPage({
   const message = params.message;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-white px-6 py-10 sm:px-10 lg:px-16">
-      <div className="mx-auto grid min-h-[calc(100vh-5rem)] w-full max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+    <main className="page-shell">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="card-dark flex flex-col justify-between rounded-[36px] p-8 sm:p-10">
           <div className="space-y-5">
-            <p className="text-xs uppercase tracking-[0.24em] text-accent-light">Resume Assistant</p>
+            <span className="badge-soft border-white/15 bg-white/10 text-slate-200">JobMatch AI</span>
             <h1 className="max-w-xl text-4xl font-semibold leading-tight sm:text-5xl">
               从一份基础简历开始，持续用真实投递结果优化你的求职策略。
             </h1>
@@ -45,61 +46,81 @@ export default async function LoginPage({
         <section className="flex items-center">
           <div className="card-primary w-full rounded-[32px] p-8 sm:p-10">
             <div className="space-y-2">
-              <p className="text-sm uppercase tracking-[0.2em] text-slate-500">登录</p>
-              <h2 className="text-3xl font-semibold text-slate-950">邮箱与密码</h2>
-              <p className="text-sm leading-7 text-slate-600">
+              <p className="text-sm uppercase tracking-[0.2em] text-text-secondary">登录</p>
+              <h2 className="text-3xl font-semibold text-text-strong">邮箱与密码</h2>
+              <p className="text-sm leading-7 text-text-secondary">
                 使用同一组账号信息，方便重复测试。密码至少 8 位。
               </p>
             </div>
 
-            <form className="mt-8 space-y-5">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-700">邮箱</span>
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  className="input-primary"
-                />
-              </label>
+            <div className="mt-8 grid gap-4">
+              <form action={signInWithPassword} className="space-y-5">
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-text-primary">邮箱</span>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="you@example.com"
+                    className="input-primary"
+                  />
+                </label>
 
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-700">密码</span>
-                <input
-                  name="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  placeholder="至少 8 位字符"
-                  className="input-primary"
-                />
-              </label>
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-text-primary">密码</span>
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="至少 8 位字符"
+                    className="input-primary"
+                  />
+                </label>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  formAction={signInWithPassword}
-                  className="btn-primary"
-                >
+                <SubmitButton className="btn-primary w-full" pendingText="登录中...">
                   登录
-                </button>
-                <button
-                  formAction={signUpWithPassword}
-                  className="btn-secondary"
-                >
+                </SubmitButton>
+              </form>
+
+              <form action={signUpWithPassword} className="space-y-5 rounded-3xl border border-border-light bg-surface-medium/90 p-5">
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-text-primary">邮箱</span>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="you@example.com"
+                    className="input-primary"
+                  />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-text-primary">密码</span>
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="至少 8 位字符"
+                    className="input-primary"
+                  />
+                </label>
+
+                <SubmitButton className="btn-secondary w-full" pendingText="注册中...">
                   注册账号
-                </button>
-              </div>
-            </form>
+                </SubmitButton>
+              </form>
+            </div>
 
-            <div className="mt-5 min-h-6 text-sm text-slate-600">{message ?? ""}</div>
+            <div className="mt-5 min-h-6 text-sm text-text-secondary">{message ?? ""}</div>
 
-            <div className="mt-6 rounded-2xl border border-accent/30 bg-accent/10 p-4 text-sm leading-7 text-accent-950">
+            <div className="panel-note mt-6">
               测试说明：简历和 JD 会被保存用于产品验证，请不要上传身份证、家庭住址等不必要的敏感信息。
             </div>
 
-            <div className="mt-8 border-t border-slate-200 pt-5 text-sm text-slate-500">
-              <Link href="/" className="font-medium text-slate-700 transition hover:text-slate-950">
+            <div className="mt-8 border-t border-border-light pt-5 text-sm text-text-secondary">
+              <Link href="/" className="font-medium text-text-primary transition hover:text-text-strong">
                 返回首页
               </Link>
             </div>
@@ -109,4 +130,3 @@ export default async function LoginPage({
     </main>
   );
 }
-

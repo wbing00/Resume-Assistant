@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 
 import { signOut } from "@/app/login/actions";
+import { FormPendingHint, SubmitButton } from "@/components/ui/submit-button";
 import { getCurrentProfile } from "@/lib/auth";
 import type { AnalysisRecord, JobDescriptionRecord, JsonValue, ResumeRecord } from "@/types";
 
@@ -50,12 +51,12 @@ function parseSuggestions(value: JsonValue | null) {
 
 function ListBlock({ title, items, emptyText }: { title: string; items: string[]; emptyText: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{title}</p>
+    <div className="rounded-2xl border border-border-light bg-surface p-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">{title}</p>
       {items.length === 0 ? (
-        <p className="mt-3 text-sm leading-7 text-slate-400">{emptyText}</p>
+        <p className="mt-3 text-sm leading-7 text-text-secondary">{emptyText}</p>
       ) : (
-        <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-200">
+        <ul className="mt-3 space-y-2 text-sm leading-7 text-text-primary">
           {items.map((item) => (
             <li key={item}>{item}</li>
           ))}
@@ -109,12 +110,12 @@ export default async function ApplyPage({
   const latestAnalysisId = params.analysisId ?? analysisList[0]?.id;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-white px-6 py-10 text-text-primary sm:px-10 lg:px-16">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <main className="page-shell">
+      <div className="page-wrap">
         <header className="page-header">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.24em] text-accent">开始投递</p>
-            <h1 className="text-3xl font-semibold text-text-primary">根据目标岗位，快速生成投递内容</h1>
+            <h1 className="text-3xl font-semibold text-text-strong">根据目标岗位，快速生成投递内容</h1>
             <p className="text-sm leading-7 text-text-secondary">
               当前账号：<span className="font-medium text-text-primary">{profile.email}</span>。输入 JD，选择简历，系统会直接生成你这次投递最需要的内容。
             </p>
@@ -124,7 +125,7 @@ export default async function ApplyPage({
               返回首页
             </Link>
             <form action={signOut}>
-              <button type="submit" className="btn-text">
+              <button type="submit" className="btn-secondary">
                 退出登录
               </button>
             </form>
@@ -137,16 +138,16 @@ export default async function ApplyPage({
           <div className="flex flex-col gap-8">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-text-secondary">核心任务</p>
-              <h2 className="mt-3 text-2xl font-semibold text-text-primary">开始一次投递准备</h2>
+              <h2 className="mt-3 text-2xl font-semibold text-text-strong">开始一次投递准备</h2>
               <p className="mt-2 text-lg leading-8 text-text-secondary">
                 你现在只需要做两件事：粘贴目标岗位 JD，选择一份基础简历。系统会自动完成岗位解析和匹配分析，并输出可直接使用的介绍和修改建议。
               </p>
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
+              <div className="panel-note mt-5">
                 适合的场景：你已经确定好要投哪个岗位，现在只想快速得到一段更贴合 JD 的介绍和投递内容。
               </div>
             </div>
 
-            <form action={createApplyResult} className="space-y-6 rounded-[24px] border border-border-light bg-slate-50 p-6">
+            <form action={createApplyResult} className="space-y-6 rounded-[24px] border border-border-light bg-surface-medium p-6">
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-text-primary">选择简历</span>
                 <select name="resumeId" required className="select-primary">
@@ -173,25 +174,26 @@ export default async function ApplyPage({
                 <textarea name="rawText" required rows={14} placeholder="将目标岗位 JD 粘贴到这里" className="textarea-primary" />
               </label>
 
-              <button type="submit" className="btn-primary w-full">
+              <SubmitButton className="btn-primary w-full" pendingText="正在生成投递内容...">
                 生成本次投递内容
-              </button>
+              </SubmitButton>
+              <FormPendingHint text="这一步会同时做 JD 解析和匹配生成，耗时会更长一些。" />
             </form>
           </div>
         </section>
 
-        <section className="card-dark">
+        <section className="card-medium">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">结果区</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">最近生成的投递内容</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-text-secondary">结果区</p>
+              <h2 className="mt-2 text-2xl font-semibold text-text-strong">最近生成的投递内容</h2>
             </div>
-            <p className="text-sm text-slate-400">先解决当下的投递需求，再决定是否记录为一次正式投递。</p>
+            <p className="text-sm text-text-secondary">先解决当下的投递需求，再决定是否记录为一次正式投递。</p>
           </div>
 
           <div className="mt-6 space-y-5">
             {analysisList.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm leading-7 text-slate-300">
+              <div className="rounded-2xl border border-border-light bg-surface-dark p-6 text-sm leading-7 text-text-primary">
                 还没有生成记录。先在上方输入 JD 并选择简历，系统会直接生成可用内容。
               </div>
             ) : (
@@ -205,14 +207,14 @@ export default async function ApplyPage({
                 const isFocused = analysis.id === latestAnalysisId;
 
                 return (
-                  <article key={analysis.id} className={`rounded-[24px] border p-6 ${isFocused ? "border-accent bg-white/10" : "border-white/10 bg-white/5"}`}>
+                  <article key={analysis.id} className={`rounded-[24px] border p-6 ${isFocused ? "border-primary/35 bg-surface shadow-[var(--shadow-sm)]" : "border-border-light bg-[rgba(255,250,243,0.72)]"}`}>
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-white">{job?.job_title || "未命名岗位"}</h3>
-                        <p className="mt-1 text-sm text-slate-300">公司：{job?.company_name || "未知公司"} · 简历：{resume?.original_file_name || "未知简历"} · 生成时间：{formatDate(analysis.created_at)}</p>
+                        <h3 className="text-lg font-semibold text-text-strong">{job?.job_title || "未命名岗位"}</h3>
+                        <p className="mt-1 text-sm text-text-secondary">公司：{job?.company_name || "未知公司"} · 简历：{resume?.original_file_name || "未知简历"} · 生成时间：{formatDate(analysis.created_at)}</p>
                       </div>
                       <div className="flex flex-wrap gap-3">
-                        <div className="rounded-full bg-accent/20 px-4 py-2 text-sm font-semibold text-accent-light">匹配分：{analysis.match_score ?? "-"}</div>
+                        <div className="info-chip">匹配分：{analysis.match_score ?? "-"}</div>
                         <Link href={`/applications?analysisId=${analysis.id}`} className="btn-secondary">
                           记录这次投递
                         </Link>
@@ -220,13 +222,13 @@ export default async function ApplyPage({
                     </div>
 
                     <div className="mt-5 space-y-4">
-                      <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">自我介绍</p>
-                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{analysis.generated_intro || "当前没有生成自我介绍。"}</p>
+                      <div className="rounded-2xl border border-border-light bg-surface p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">自我介绍</p>
+                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-text-primary">{analysis.generated_intro || "当前没有生成自我介绍。"}</p>
                       </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">打招呼 / 投递附言</p>
-                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{outreachMessage || "当前没有生成投递附言。"}</p>
+                      <div className="rounded-2xl border border-border-light bg-surface p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">打招呼 / 投递附言</p>
+                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-text-primary">{outreachMessage || "当前没有生成投递附言。"}</p>
                       </div>
                       <ListBlock title="简历修改建议" items={bullets} emptyText="当前没有生成简历修改建议。" />
                       <div className="grid gap-4 md:grid-cols-3">
@@ -244,15 +246,15 @@ export default async function ApplyPage({
 
         <section className="grid gap-4 md:grid-cols-3">
           <Link href="/applications" className="card-secondary">
-            <span className="block text-lg font-semibold text-slate-950">查看投递记录</span>
+            <span className="block text-lg font-semibold text-text-strong">查看投递记录</span>
             记录是否使用了 AI 建议，以及后续回复、面试和 offer 结果。
           </Link>
           <Link href="/resume" className="card-secondary">
-            <span className="block text-lg font-semibold text-slate-950">管理简历</span>
+            <span className="block text-lg font-semibold text-text-strong">管理简历</span>
             在这里维护你的基础简历版本，设置默认简历供后续快速使用。
           </Link>
           <Link href="/analysis" className="card-secondary">
-            <span className="block text-lg font-semibold text-slate-950">查看历史分析</span>
+            <span className="block text-lg font-semibold text-text-strong">查看历史分析</span>
             如果你想单独管理分析记录，也可以继续使用原有分析页。
           </Link>
         </section>

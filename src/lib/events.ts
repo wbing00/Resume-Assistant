@@ -1,3 +1,5 @@
+import type { JsonValue } from "@/types";
+
 export async function logProductEvent(
   supabase: {
     from: (table: string) => {
@@ -6,7 +8,7 @@ export async function logProductEvent(
   },
   userId: string | null,
   eventName: string,
-  eventPayload: Record<string, string | number | boolean | null>,
+  eventPayload: Record<string, JsonValue>,
 ) {
   const { error } = await supabase.from("events").insert({
     user_id: userId,

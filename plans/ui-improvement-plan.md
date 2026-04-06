@@ -1,4 +1,4 @@
-# Resume Assistant UI 改进计划
+# JobMatch AI UI 改进计划
 
 ## 当前问题分析
 

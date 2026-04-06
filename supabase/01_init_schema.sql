@@ -1,4 +1,4 @@
--- Resume Assistant V1 schema and RLS policies
+-- JobMatch AI V1 schema and RLS policies
 -- Run this file in the Supabase SQL editor for the initial project setup.
 
 begin;

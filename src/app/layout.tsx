@@ -14,8 +14,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Resume Assistant",
-  description: "AI-assisted job application workflow for resume tailoring and tracking.",
+  title: "JobMatch AI",
+  description: "AI-powered job application platform for resume optimization, job matching, and application tracking.",
 };
 
 export default function RootLayout({

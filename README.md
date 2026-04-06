@@ -1,4 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# JobMatch AI - 智能求职匹配平台
+
+JobMatch AI 是一个基于 AI 的智能求职辅助平台，帮助求职者优化简历、分析岗位匹配度、生成定制化求职内容，并跟踪投递进度。
+
+## 核心功能
+
+- **简历智能解析** - 上传简历并提取结构化信息
+- **JD 深度分析** - 解析岗位描述，提取关键要求
+- **AI 匹配分析** - 智能分析简历与岗位的匹配度
+- **内容生成** - 生成定制化的自我介绍、投递附言和简历优化建议
+- **投递记录管理** - 跟踪求职申请状态和反馈
+- **数据分析看板** - 查看历史分析和投递结果
+
+## 技术栈
+
+- **前端**: Next.js 16, React 19, TypeScript
+- **样式**: Tailwind CSS 4
+- **数据库**: Supabase (PostgreSQL)
+- **认证**: Supabase Auth
+- **AI 集成**: OpenAI API
+- **部署**: Vercel
 
 ## Getting Started
 

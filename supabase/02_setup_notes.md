@@ -2,7 +2,7 @@
 
 ## 1. 执行顺序
 1. 打开 Supabase 项目的 `SQL Editor`
-2. 执行 [01_init_schema.sql](D:\Resume Assistant\supabase\01_init_schema.sql)
+2. 执行 [01_init_schema.sql](./01_init_schema.sql)
 3. 确认所有表、索引、触发器和策略创建成功
 
 ## 2. 初始化后需要手动做的事

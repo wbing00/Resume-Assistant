@@ -77,7 +77,7 @@
 
 ```jsx
 <div className="card-primary">
-  <h3 className="text-xl font-semibold text-slate-900">Resume Assistant</h3>
+  <h3 className="text-xl font-semibold text-slate-900">JobMatch AI</h3>
   <p className="mt-2 text-slate-600">先解决这次投递要写什么，再决定是否记录和复盘。</p>
   <button className="btn-primary mt-4">快速开始</button>
 </div>

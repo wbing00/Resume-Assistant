@@ -1,4 +1,4 @@
--- Resume Assistant V1 storage policies
+-- JobMatch AI V1 storage policies
 -- Run this after creating the private `resumes` bucket if you want user-session uploads
 -- to work without the server-side service-role upload fallback.
 
